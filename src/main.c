@@ -55,7 +55,6 @@ int main(int argc, char *const argv[]) {
       is_binary = true;
       break;
     case '?':
-      printf("Unknown option %s\n", optarg);
       return 0;
     }
   }
