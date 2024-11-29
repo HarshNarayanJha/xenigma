@@ -250,15 +250,34 @@ bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
 }
 
 void help(char *const basename) {
-  printf("C utility to encrypt your files with XOR encryption security.\n");
-  printf("Usage: %s -f <input_file> [-o <output_file>] [-k <key_file>] -e|-d [-b] [-h]\n", basename);
-  printf("Options:\n");
+  printf("\n╔════════════════════════════════════════════════════════════╗\n");
+  printf("║                         XENIGMA                            ║\n");
+  printf("╚════════════════════════════════════════════════════════════╝\n\n");
+
+  printf("A utility to encrypt your files with XOR encryption security.\n\n");
+
+  printf("USAGE:\n");
+  printf("  %s -f <input_file> [-o <output_file>] [-k <key_file>] -e|-d [-b]\n\n", basename);
+
+  printf("OPTIONS:\n");
   printf("  -f <input_file>    Input file to encrypt/decrypt (required)\n");
-  printf("  -o <output_file>   Output file (autodetermined - input_file.xor for encrypt, file.txt/file.out for decrypt). "
-         "WARNING: File will be overwritten\n");
-  printf("  -k <key_file>      Key file location to save/read from (default: xor.key)\n");
+  printf("  -o <output_file>   Output file location (optional)\n");
+  printf("                     Defaults:\n");
+  printf("                     • Encrypt: <input_file>.xor\n");
+  printf("                     • Decrypt: out.txt or file.out (binary)\n");
+  printf("  -k <key_file>      Key file location (default: xor.key)\n");
   printf("  -e                 Encrypt the input file\n");
   printf("  -d                 Decrypt the input file\n");
-  printf("  -b                 Specifies that the original file is in binary, not plaintext\n");
-  printf("  -h                 Show this help message\n");
+  printf("  -b                 Binary mode (use for non-text files)\n");
+  printf("  -h                 Show this help message\n\n");
+
+  printf("EXAMPLES:\n");
+  printf("  Encrypt:   %s -f secret.txt -e\n", basename);
+  printf("  Decrypt:   %s -f secret.txt.xor -d\n", basename);
+  printf("  Binary:    %s -f image.jpg -e -b\n\n", basename);
+
+  printf("WARNING:\n");
+  printf("  • Output files will be overwritten without confirmation\n");
+  printf("  • Keep your key file safe - it's required for decryption\n");
+  printf("  • Binary mode (-b) must be used consistently\n\n");
 }
