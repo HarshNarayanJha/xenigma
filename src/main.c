@@ -10,7 +10,7 @@ const char *KEY_FILE_NAME = "xor.key";
 
 const char *DECRYPT_FILE_NAME = "out.txt";
 const char *DECRYPT_FILE_NAME_BINARY = "file.out";
-const int BUFFER_SIZE = 100;
+const int BUFFER_SIZE = 4096;
 
 void help(char *const basename);
 bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary);
@@ -28,19 +28,22 @@ int main(int argc, char *const argv[]) {
 
   bool is_binary = false;
 
-  while ((opt = getopt(argc, argv, "f:okhed")) != -1) {
+  while ((opt = getopt(argc, argv, "f:o:k:hedb")) != -1) {
     switch (opt) {
     case 'h':
       help(argv[0]);
       return 0;
     case 'f':
-      ifile = optarg;
+      ifile = malloc(strlen(optarg) + 1);
+      strcpy(ifile, optarg);
       break;
     case 'o':
-      ofile = optarg;
+      ofile = malloc(strlen(optarg) + 1);
+      strcpy(ofile, optarg);
       break;
     case 'k':
-      kfile = optarg;
+      kfile = malloc(strlen(optarg) + 1);
+      strcpy(kfile, optarg);
       break;
     case 'e':
       is_encrypt = true;
@@ -90,8 +93,8 @@ bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   // randomize randomizer
   srand(time(NULL));
 
-  // 8 bytes random key
-  int KEY = rand() % 256;
+  // 1 byte random key
+  unsigned char KEY = rand() % 256;
 
   if (ifile == NULL) {
     printf("Didn't pass the input file\n");
@@ -100,15 +103,15 @@ bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
 
   if (ofile == NULL) {
     // calculate output file name based on input file
-    ofile = (char *)malloc(sizeof(char) * (strlen(ifile) + strlen(ENCRYPT_AUTO_EXTENSION)));
-    strcat(ofile, ifile);
+    ofile = malloc(strlen(ifile) + strlen(ENCRYPT_AUTO_EXTENSION) + 1);
+    strcpy(ofile, ifile);
     strcat(ofile, ENCRYPT_AUTO_EXTENSION);
   }
 
   if (kfile == NULL) {
     // calculate key file name
-    kfile = (char *)malloc(sizeof(char) * (strlen(KEY_FILE_NAME)));
-    strcat(kfile, KEY_FILE_NAME);
+    kfile = malloc(strlen(KEY_FILE_NAME) + 1);
+    strcpy(kfile, KEY_FILE_NAME);
   }
 
   printf("Will read from %s and write encrypted content to %s. Writing key to %s.\n", ifile, ofile, kfile);
@@ -118,6 +121,7 @@ bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   FILE *keyf;
 
   if (is_binary) {
+    printf("Reading input in binary mode.\n");
     input = fopen(ifile, "rb");
   } else {
     input = fopen(ifile, "r");
@@ -141,39 +145,25 @@ bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   }
 
   // write to xor.key and close it
-  fwrite(&KEY, sizeof(char), 8, keyf);
+  fwrite(&KEY, sizeof(char), 1, keyf);
   fclose(keyf);
 
   char buffer[BUFFER_SIZE];
-  size_t read;
+  size_t bytes_read;
 
-  bool wrote_successfully = true;
-
-  while ((read = fread(buffer, sizeof(char), BUFFER_SIZE, input))) {
-    if (ferror(input)) {
-      printf("Error reading %s", ifile);
-      wrote_successfully = false;
-      break;
+  while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, input)) > 0) {
+    for (size_t i = 0; i < bytes_read; i++) {
+      buffer[i] ^= KEY;
     }
 
-    for (int i = 0; i < BUFFER_SIZE; i++) {
-      if (buffer[i] == '\0')
-        break;
-
-      char input_file_c = buffer[i];
-      char output_file_c = input_file_c ^ KEY;
-      buffer[i] = output_file_c;
-    }
-
-    // now encrypt the buffer and write to output file.
-    fwrite(buffer, sizeof(char), BUFFER_SIZE, output);
+    fwrite(buffer, sizeof(char), bytes_read, output);
   }
 
   // close file streams
   fclose(output);
   fclose(input);
 
-  return wrote_successfully;
+  return true;
 }
 
 bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
@@ -185,18 +175,18 @@ bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   if (ofile == NULL) {
     // calculate output file name based on input file
     if (is_binary) {
-      ofile = (char *)malloc(sizeof(char) * (strlen(DECRYPT_FILE_NAME_BINARY)));
-      strcat(ofile, DECRYPT_FILE_NAME_BINARY);
+      ofile = malloc(strlen(DECRYPT_FILE_NAME_BINARY) + 1);
+      strcpy(ofile, DECRYPT_FILE_NAME_BINARY);
     } else {
-      ofile = (char *)malloc(sizeof(char) * (strlen(DECRYPT_FILE_NAME)));
-      strcat(ofile, DECRYPT_FILE_NAME);
+      ofile = malloc(strlen(DECRYPT_FILE_NAME) + 1);
+      strcpy(ofile, DECRYPT_FILE_NAME);
     }
   }
 
   if (kfile == NULL) {
     // calculate key file name
-    kfile = (char *)malloc(sizeof(char) * (strlen(KEY_FILE_NAME)));
-    strcat(kfile, KEY_FILE_NAME);
+    kfile = malloc(strlen(KEY_FILE_NAME) + 1);
+    strcpy(kfile, KEY_FILE_NAME);
   }
 
   printf("Will read from %s and write decrypted content to %s using the key from %s.\n", ifile, ofile, kfile);
@@ -212,6 +202,7 @@ bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   }
 
   if (is_binary) {
+    printf("Writing output in binary mode.\n");
     output = fopen(ofile, "wb");
   } else {
     output = fopen(ofile, "w");
@@ -229,45 +220,34 @@ bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   }
 
   // read the key
-  int KEY;
-  size_t key_read = fread(&KEY, sizeof(char), 8, keyf);
+  unsigned char KEY;
+  size_t key_read = fread(&KEY, sizeof(char), 1, keyf);
   fclose(keyf);
-  if (key_read != 8) {
+
+  if (key_read != 1) {
     printf("Couldn't read key from %s. Error", kfile);
     return false;
   }
 
+  printf("Using key %b\n", KEY);
+
   // read, decrypt, and write!
   char buffer[BUFFER_SIZE];
-  size_t read;
+  size_t bytes_read;
 
-  bool wrote_successfully = true;
-
-  while ((read = fread(buffer, sizeof(char), BUFFER_SIZE, input))) {
-    if (ferror(input)) {
-      printf("Error reading %s", ifile);
-      wrote_successfully = false;
-      break;
+  while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, input)) > 0) {
+    for (size_t i = 0; i < bytes_read; i++) {
+      buffer[i] ^= KEY;
     }
 
-    for (int i = 0; i < BUFFER_SIZE; i++) {
-      if (buffer[i] == '\0')
-        break;
-
-      char input_file_c = buffer[i];
-      char output_file_c = input_file_c ^ KEY;
-      buffer[i] = output_file_c;
-    }
-
-    // now encrypt the buffer and write to output file.
-    fwrite(buffer, sizeof(char), BUFFER_SIZE, output);
+    fwrite(buffer, sizeof(char), bytes_read, output);
   }
 
   // close file streams
   fclose(output);
   fclose(input);
 
-  return wrote_successfully;
+  return true;
 }
 
 void help(char *const basename) {

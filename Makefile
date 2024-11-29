@@ -13,7 +13,7 @@ bin:
 run: bin/xenigma
 	./bin/xenigma
 
-clean:
+clean: clean_gen
 	rm -f bin/xenigma
 
 clean_gen:
