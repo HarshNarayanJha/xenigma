@@ -15,3 +15,7 @@ run: bin/xenigma
 
 clean:
 	rm -f bin/xenigma
+
+clean_gen:
+	rm -f test.txt.xor
+	rm -f xor.key
