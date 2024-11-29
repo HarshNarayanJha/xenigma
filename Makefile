@@ -19,3 +19,5 @@ clean:
 clean_gen:
 	rm -f test.txt.xor
 	rm -f xor.key
+	rm -f file.out
+	rm -f out.txt

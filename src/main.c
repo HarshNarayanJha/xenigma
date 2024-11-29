@@ -8,12 +8,13 @@
 const char *ENCRYPT_AUTO_EXTENSION = ".xor";
 const char *KEY_FILE_NAME = "xor.key";
 
-const char *DECRYPT_FILE_NAME = "file.out";
+const char *DECRYPT_FILE_NAME = "out.txt";
+const char *DECRYPT_FILE_NAME_BINARY = "file.out";
 const int BUFFER_SIZE = 100;
 
 void help(char *const basename);
-bool encrypt(char *ifile, char *ofile, char *kfile);
-bool decrypt(char *ifile, char *ofile, char *kfile);
+bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary);
+bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary);
 
 int main(int argc, char *const argv[]) {
   int opt;
@@ -24,6 +25,8 @@ int main(int argc, char *const argv[]) {
 
   bool is_encrypt = false;
   bool is_decrypt = false;
+
+  bool is_binary = false;
 
   while ((opt = getopt(argc, argv, "f:okhed")) != -1) {
     switch (opt) {
@@ -45,6 +48,9 @@ int main(int argc, char *const argv[]) {
     case 'd':
       is_decrypt = true;
       break;
+    case 'b':
+      is_binary = true;
+      break;
     case '?':
       printf("Unknown option %s\n", optarg);
       return 0;
@@ -62,14 +68,14 @@ int main(int argc, char *const argv[]) {
   }
 
   if (is_encrypt == true) {
-    if (encrypt(ifile, ofile, kfile)) {
+    if (encrypt(ifile, ofile, kfile, is_binary)) {
       printf("File successfully encrypted. Keep the key safe!\n");
     }
     return 0;
   }
 
   if (is_decrypt == true) {
-    if (decrypt(ifile, ofile, kfile)) {
+    if (decrypt(ifile, ofile, kfile, is_binary)) {
       printf("File successfully decrypted. Keep the file safe!\n");
     }
     return 0;
@@ -80,7 +86,7 @@ int main(int argc, char *const argv[]) {
   free(kfile);
 }
 
-bool encrypt(char *ifile, char *ofile, char *kfile) {
+bool encrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   // randomize randomizer
   srand(time(NULL));
 
@@ -111,7 +117,12 @@ bool encrypt(char *ifile, char *ofile, char *kfile) {
   FILE *output;
   FILE *keyf;
 
-  input = fopen(ifile, "rb");
+  if (is_binary) {
+    input = fopen(ifile, "rb");
+  } else {
+    input = fopen(ifile, "r");
+  }
+
   if (input == NULL) {
     printf("%s couldn't be opened for reading. You sure it exists?\n", ifile);
     return false;
@@ -165,7 +176,7 @@ bool encrypt(char *ifile, char *ofile, char *kfile) {
   return wrote_successfully;
 }
 
-bool decrypt(char *ifile, char *ofile, char *kfile) {
+bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
   if (ifile == NULL) {
     printf("Didn't pass the input file to decrypt\n");
     return false;
@@ -173,8 +184,13 @@ bool decrypt(char *ifile, char *ofile, char *kfile) {
 
   if (ofile == NULL) {
     // calculate output file name based on input file
-    ofile = (char *)malloc(sizeof(char) * (strlen(DECRYPT_FILE_NAME)));
-    strcat(ofile, DECRYPT_FILE_NAME);
+    if (is_binary) {
+      ofile = (char *)malloc(sizeof(char) * (strlen(DECRYPT_FILE_NAME_BINARY)));
+      strcat(ofile, DECRYPT_FILE_NAME_BINARY);
+    } else {
+      ofile = (char *)malloc(sizeof(char) * (strlen(DECRYPT_FILE_NAME)));
+      strcat(ofile, DECRYPT_FILE_NAME);
+    }
   }
 
   if (kfile == NULL) {
@@ -195,7 +211,12 @@ bool decrypt(char *ifile, char *ofile, char *kfile) {
     return false;
   }
 
-  output = fopen(ofile, "wb");
+  if (is_binary) {
+    output = fopen(ofile, "wb");
+  } else {
+    output = fopen(ofile, "w");
+  }
+
   if (output == NULL) {
     printf("%s couldn't be opened for writing.\n", ofile);
     return false;
@@ -251,12 +272,14 @@ bool decrypt(char *ifile, char *ofile, char *kfile) {
 
 void help(char *const basename) {
   printf("C utility to encrypt your files with XOR encryption security.\n");
-  printf("Usage: %s -f <input_file> [-o <output_file>] [-k <key_file>] [-e|-d] [-h]\n", basename);
+  printf("Usage: %s -f <input_file> [-o <output_file>] [-k <key_file>] -e|-d [-b] [-h]\n", basename);
   printf("Options:\n");
   printf("  -f <input_file>    Input file to encrypt/decrypt (required)\n");
-  printf("  -o <output_file>   Output file (autodetermined - input_file.xor for encrypt, file.out for decrypt)\n");
+  printf("  -o <output_file>   Output file (autodetermined - input_file.xor for encrypt, file.txt/file.out for decrypt). "
+         "WARNING: File will be overwritten\n");
   printf("  -k <key_file>      Key file location to save/read from (default: xor.key)\n");
   printf("  -e                 Encrypt the input file\n");
   printf("  -d                 Decrypt the input file\n");
+  printf("  -b                 Specifies that the original file is in binary, not plaintext\n");
   printf("  -h                 Show this help message\n");
 }
