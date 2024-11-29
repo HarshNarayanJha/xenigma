@@ -228,8 +228,6 @@ bool decrypt(char *ifile, char *ofile, char *kfile, bool is_binary) {
     return false;
   }
 
-  printf("Using key %b\n", KEY);
-
   // read, decrypt, and write!
   char buffer[BUFFER_SIZE];
   size_t bytes_read;
