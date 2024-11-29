@@ -3,7 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 
-const char* AUTO_EXTENSION = ".xor";
+const char *AUTO_EXTENSION = ".xor";
+const int BUFFER_SIZE = 100;
 
 void help(char *const basename);
 
@@ -34,19 +35,42 @@ int main(int argc, char *const argv[]) {
 
   if (ofile == NULL) {
     // calculate output file name based on input file
-    ofile = (char*) malloc(sizeof(char) * (strlen(ifile) + strlen(AUTO_EXTENSION)));
+    ofile =
+        (char *)malloc(sizeof(char) * (strlen(ifile) + strlen(AUTO_EXTENSION)));
     strcat(ofile, ifile);
     strcat(ofile, AUTO_EXTENSION);
   }
 
   printf("Will read from %s and write encrypted content to %s\n", ifile, ofile);
 
-  FILE* input;
-  FILE* output;
+  FILE *input;
+  FILE *output;
 
   input = fopen(ifile, "r");
-  output = fopen(ofile, "wb");
+  if (input == NULL) {
+    printf("%s couldn't be opened for reading. You sure it exists?\n", ifile);
+    return 1;
+  }
 
+  output = fopen(ofile, "wb");
+  if (output == NULL) {
+    printf("%s couldn't be opened for writing. You sure it exists?\n", ofile);
+    return 1;
+  }
+
+  char buffer[BUFFER_SIZE];
+  size_t read;
+
+  while ((read = fread(buffer, sizeof(char), BUFFER_SIZE, input))) {
+    if (ferror(input)) {
+      printf("Error reading %s", ifile);
+      break;
+    }
+
+    // now encrypt the buffer and write to output file.
+  }
+
+  // close file streams
   fclose(output);
   fclose(input);
 }
