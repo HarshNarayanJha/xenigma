@@ -1,4 +1,5 @@
 bin
 *.xor
 *.txt
-xor.key
+*.key
+*.out
