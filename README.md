@@ -27,24 +27,24 @@ It works on the principle of the XOR (^) operator. It is a simple bitwise operat
 When applied on bigger numbers, we can notice a very crucial yet intriguing property about it, if with XOR a number with some key, and then XOR the result with the same key, we get the original number as output!
 
 (NOTE that ^ refers to the XOR operator, and not exponentiation in this document)
-
+```
 35 ^ 6 = 37
 37 ^ 6 = 35
-
+```
 This happens because of the binary representation of the numbers
-
+```
 35 = 00100011
 06 = 00000110
 --------------- ^
 37 = 00100101
-
+```
 The 6 acts as a mask and flips the 2nd and 3rd bits (from right).
-
+```
 37 = 00100101
 06 = 00000110
 --------------- ^
 35 = 00100011
-
+```
 And then the same mask again flips the 2nd and 3rd bits (from right), reverting it to the original number.
 
 Now let's imagine if we apply this to a file, reading all of its contents, byte by byte, and using a 1 byte number as the key, we can do xor on each byte of the file, and write the resulting buffer to a new file.
